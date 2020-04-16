@@ -135,12 +135,9 @@ def train_task(args, train_loader, current_task, prototype={}, pre_index=0):
     model = model.cuda()
        
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-
-    criterion = torch.nn.CrossEntropyLoss().cuda()
     scheduler = StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay)
 
     loss_mse = torch.nn.MSELoss(reduction='sum')
-    criterion_lwf = torch.nn.BCEWithLogitsLoss().cuda()
 
     # Loss weight for gradient penalty used in W-GAN
     lambda_gp = args.lambda_gp
@@ -202,7 +199,6 @@ def train_task(args, train_loader, current_task, prototype={}, pre_index=0):
 
             ### Feature Extractor Loss
             if current_task > 0:                                    
-                batch_size = inputs1.shape[0] #!
                 loss_aug = torch.dist(embed_feat, embed_feat_old , 2)                    
                 loss += args.tradeoff * loss_aug * old_task_factor
             
@@ -368,7 +364,6 @@ def train_task(args, train_loader, current_task, prototype={}, pre_index=0):
                         loss_aug = loss_mse(pre_feat, pre_feat_old)
                     g_loss_rf = -torch.mean(fake_validity)
                     g_loss_lbls = criterion_softmax(disc_fake_acgan, labels.cuda())
-                    g_loss_classifier = criterion_softmax(model.embed(fake_feat), labels.cuda())
                     g_loss = g_loss_rf \
                                 + lambda_lwf*old_task_factor * loss_aug 
                     loss_log['G/loss'] += g_loss.item()
